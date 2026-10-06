@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>THAT ONE!!</title>
+
+  <!-- Tailwind CSS via CDN, as requested. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --chaos-x: 0px;
+      --chaos-y: 0px;
+      --glitch-rotate: 0deg;
+      --flash-opacity: 0;
+      --bounce-scale: 1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #ff1493;
+    }
+
+    body {
+      position: relative;
+      isolation: isolate;
+      cursor: crosshair;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* Rapidly cycle through intentionally awful neon colors. */
+    .chaos-bg {
+      position: fixed;
+      inset: -10%;
+      z-index: -5;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,.4), transparent 20%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,.3), transparent 18%),
+        #ff1493;
+      animation: bgCyclone 0.38s steps(1, end) infinite;
+      filter: saturate(2.8) contrast(1.45);
+      transform: scale(1.12);
+    }
+
+    .chaos-bg::before,
+    .chaos-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .chaos-bg::before {
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(255,255,255,.00) 0 3px,
+          rgba(255,255,255,.16) 3px 5px
+        );
+      mix-blend-mode: overlay;
+      animation: scanlines 0.12s linear infinite;
+    }
+
+    .chaos-bg::after {
+      background:
+        repeating-conic-gradient(
+          from 0deg,
+          rgba(255,255,255,.14) 0 7deg,
+          transparent 7deg 16deg
+        );
+      mix-blend-mode: screen;
+      animation: wheel 0.7s linear infinite;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100dvh;
+      min-height: 100vh;
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      padding: clamp(12px, 3vw, 40px);
+      transform:
+        translate3d(var(--chaos-x), var(--chaos-y), 0)
+        rotate(var(--glitch-rotate));
+      animation: bodyShudder 0.095s steps(2, end) infinite;
+      transition: filter 80ms linear;
+      will-change: transform, filter;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 30;
+      background: rgba(255,255,255,var(--flash-opacity));
+      mix-blend-mode: difference;
+    }
+
+    .headline {
+      position: absolute;
+      top: clamp(2vh, 4vh, 5vh);
+      left: 50%;
+      z-index: 15;
+      margin: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      white-space: nowrap;
+      transform: translateX(-50%) rotate(-2deg);
+      font-family:
+        Impact, Haettenschweiler, "Arial Black", system-ui, sans-serif;
+      font-size: clamp(4rem, 13vw, 13rem);
+      line-height: .8;
+      letter-spacing: -.045em;
+      color: #fff;
+      -webkit-text-stroke: clamp(2px, .4vw, 7px) #000;
+      text-shadow:
+        8px 8px 0 #ff00c8,
+        -8px -8px 0 #00eaff,
+        0 0 16px #fff,
+        0 0 34px #fff,
+        0 0 60px #ff0;
+      filter: saturate(2.2) contrast(1.3);
+      animation:
+        headlineWhip .18s steps(2, end) infinite,
+        headlinePulse .32s ease-in-out infinite alternate,
+        headlineJolt .65s steps(2, end) infinite;
+      will-change: transform, filter;
+    }
+
+    .meme-stage {
+      position: relative;
+      width: min(88vw, 900px);
+      height: min(68vh, 680px);
+      display: grid;
+      place-items: center;
+      perspective: 900px;
+      z-index: 10;
+    }
+
+    .meme {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      width: min(76vw, 700px);
+      max-height: min(62vh, 600px);
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      cursor: none;
+      transform:
+        translate3d(-50%, -50%, 0)
+        translate(var(--meme-x, 0px), var(--meme-y, 0px))
+        rotate(var(--meme-r, 0deg))
+        scale(var(--bounce-scale));
+      filter:
+        saturate(2.5)
+        contrast(1.5)
+        brightness(1.1)
+        hue-rotate(var(--hue, 0deg))
+        drop-shadow(0 0 6px #fff)
+        drop-shadow(0 0 26px rgba(255,0,255,.95));
+      animation:
+        memeViolence .20s steps(2, end) infinite,
+        memeSpin .85s steps(9, end) infinite,
+        memeHue .55s linear infinite;
+      will-change: transform, filter, left, top;
+      transition: left 90ms cubic-bezier(.1,.9,.2,1), top 90ms cubic-bezier(.1,.9,.2,1);
+    }
+
+    .meme::selection {
+      background: transparent;
+    }
+
+    /* Temporary cursor copies. */
+    .trail {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 50;
+      pointer-events: none;
+      transform: translate3d(-50%, -50%, 0) rotate(var(--trail-r, 0deg));
+      font-family:
+        Impact, Haettenschweiler, "Arial Black", system-ui, sans-serif;
+      font-size: clamp(10px, 1.5vw, 20px);
+      line-height: 1;
+      white-space: nowrap;
+      color: #fff;
+      -webkit-text-stroke: 1px #000;
+      text-shadow:
+        2px 2px 0 #f0f,
+        -2px -2px 0 #0ff;
+      animation: trailOut .5s linear forwards;
+      mix-blend-mode: difference;
+    }
+
+    /* Giant audio-unlock overlay. */
+    .enter {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 4vw;
+      background:
+        radial-gradient(circle, rgba(255,255,255,.15), transparent 35%),
+        rgba(0,0,0,.78);
+      backdrop-filter: blur(7px) saturate(2.5);
+      -webkit-backdrop-filter: blur(7px) saturate(2.5);
+      transition:
+        opacity .18s ease,
+        visibility .18s ease,
+        transform .18s ease;
+    }
+
+    .enter.is-gone {
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(1.25) rotate(3deg);
+      pointer-events: none;
+    }
+
+    .enter-button {
+      position: relative;
+      width: min(94vw, 1050px);
+      min-height: min(62vh, 580px);
+      border: clamp(5px, .8vw, 12px) solid #000;
+      border-radius: 2rem;
+      background:
+        repeating-linear-gradient(
+          135deg,
+          #ff00c8 0 24px,
+          #00eaff 24px 48px,
+          #a7ff00 48px 72px,
+          #fff000 72px 96px
+        );
+      color: #000;
+      font-family:
+        Impact, Haettenschweiler, "Arial Black", system-ui, sans-serif;
+      font-size: clamp(3rem, 10vw, 10rem);
+      line-height: .82;
+      letter-spacing: -.045em;
+      text-shadow:
+        5px 5px 0 #fff,
+        -5px -5px 0 #fff;
+      box-shadow:
+        18px 18px 0 #000,
+        inset 0 0 0 10px rgba(255,255,255,.55);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transform: rotate(-1deg);
+      animation:
+        enterBounce .19s steps(2, end) infinite,
+        enterColor .31s steps(1, end) infinite;
+      overflow: hidden;
+    }
+
+    .enter-button::before,
+    .enter-button::after {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      pointer-events: none;
+    }
+
+    .enter-button::before {
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 14px,
+          rgba(255,255,255,.72) 14px 17px
+        );
+      transform: rotate(17deg) translateX(-10%);
+      animation: stripeRush .25s linear infinite;
+    }
+
+    .enter-button::after {
+      border: 12px dashed #000;
+      border-radius: 50%;
+      animation: ringSpin .7s linear infinite;
+    }
+
+    .enter-button:active {
+      transform: scale(.92) rotate(4deg);
+    }
+
+    /* Intentional visual alarm state during an evade interaction. */
+    .panic-filter {
+      filter:
+        invert(1)
+        saturate(4)
+        hue-rotate(120deg)
+        contrast(2.4)
+        brightness(1.25) !important;
+    }
+
+    @keyframes bgCyclone {
+      0%   { background-color: #ff1493; }
+      25%  { background-color: #7dff00; }
+      50%  { background-color: #00a8ff; }
+      75%  { background-color: #fff000; }
+      100% { background-color: #ff1493; }
+    }
+
+    @keyframes scanlines {
+      from { transform: translateY(0); }
+      to   { transform: translateY(8px); }
+    }
+
+    @keyframes wheel {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes bodyShudder {
+      0%   { transform: translate3d(-2px, 1px, 0) rotate(-.15deg); }
+      25%  { transform: translate3d(2px, -2px, 0) rotate(.15deg); }
+      50%  { transform: translate3d(-3px, -1px, 0) rotate(-.2deg); }
+      75%  { transform: translate3d(1px, 3px, 0) rotate(.18deg); }
+      100% { transform: translate3d(2px, 1px, 0) rotate(-.12deg); }
+    }
+
+    @keyframes headlineWhip {
+      0%   { transform: translateX(-50%) translate(0,0) rotate(-2deg) skewX(0); }
+      50%  { transform: translateX(-50%) translate(-9px,2px) rotate(1deg) skewX(-2deg); }
+      100% { transform: translateX(-50%) translate(8px,-3px) rotate(-4deg) skewX(2deg); }
+    }
+
+    @keyframes headlinePulse {
+      from { filter: saturate(1.7) contrast(1.2); }
+      to   { filter: saturate(3.4) contrast(1.65) blur(.25px); }
+    }
+
+    @keyframes headlineJolt {
+      0%, 90% { scale: 1; }
+      95% { scale: 1.08 .93; }
+      100% { scale: .98 1.04; }
+    }
+
+    @keyframes memeViolence {
+      0%   { --meme-x: -10px; --meme-y: 5px;  --meme-r: -1deg; }
+      25%  { --meme-x: 9px;   --meme-y: -6px; --meme-r: 2deg; }
+      50%  { --meme-x: -7px;  --meme-y: -2px; --meme-r: -3deg; }
+      75%  { --meme-x: 6px;   --meme-y: 8px;  --meme-r: 1deg; }
+      100% { --meme-x: -3px;  --meme-y: -5px; --meme-r: -2deg; }
+    }
+
+    @keyframes memeSpin {
+      0%   { rotate: -1deg; }
+      15%  { rotate: 2deg; }
+      30%  { rotate: -3deg; }
+      45%  { rotate: 4deg; }
+      60%  { rotate: -2deg; }
+      75%  { rotate: 3deg; }
+      100% { rotate: -1deg; }
+    }
+
+    @keyframes memeHue {
+      to { --hue: 360deg; }
+    }
+
+    @keyframes trailOut {
+      0% {
+        opacity: 1;
+        scale: 1;
+        filter: blur(0);
+      }
+      100% {
+        opacity: 0;
+        scale: .25;
+        filter: blur(4px);
+      }
+    }
+
+    @keyframes enterBounce {
+      0%   { transform: rotate(-1deg) scale(1); }
+      50%  { transform: rotate(1deg) scale(1.025); }
+      100% { transform: rotate(-2deg) scale(.99); }
+    }
+
+    @keyframes enterColor {
+      0%   { filter: hue-rotate(0deg) contrast(1.4) saturate(1.7); }
+      33%  { filter: hue-rotate(120deg) contrast(1.8) saturate(2.2); }
+      66%  { filter: hue-rotate(240deg) contrast(1.55) saturate(2.1); }
+      100% { filter: hue-rotate(360deg) contrast(1.4) saturate(1.7); }
+    }
+
+    @keyframes stripeRush {
+      from { transform: rotate(17deg) translateX(-30%); }
+      to   { transform: rotate(17deg) translateX(30%); }
+    }
+
+    @keyframes ringSpin {
+      to { transform: rotate(360deg) scale(1.12); }
+    }
+
+    /* Give touch users an equivalent "chaos trigger" without relying on hover. */
+    @media (hover: none), (pointer: coarse) {
+      .meme {
+        cursor: pointer;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .chaos-bg,
+      .chaos-bg::before,
+      .chaos-bg::after,
+      .app,
+      .headline,
+      .meme,
+      .enter-button {
+        animation-duration: .5s;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chaos-bg" aria-hidden="true"></div>
+
+  <main class="app" id="app">
+    <!-- Required massive joke text. -->
+    <h1 class="headline" aria-label="THAT ONE!!">THAT ONE!!</h1>
+
+    <section class="meme-stage" aria-label="The meme">
+      <img
+        id="meme"
+        class="meme"
+        src="thatone.png"
+        alt="THAT ONE!!"
+        draggable="false"
+      />
+    </section>
+
+    <!-- Local sound source. The main element loops forever after unlock. -->
+    <audio
+      id="audio"
+      src="thatone.mp3"
+      preload="auto"
+      loop
+    ></audio>
+  </main>
+
+  <!-- Browser autoplay unlock / chaos trigger. -->
+  <div class="enter" id="enterOverlay">
+    <button
+      class="enter-button"
+      id="enterButton"
+      type="button"
+      aria-label="ENTER THE THAT ONE"
+    >
+      ENTER THE<br />THAT ONE
+    </button>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      /*
+       * EASY FILE SWAPS:
+       * Change only these two values if your local filenames change.
+       */
+      const IMAGE_SRC = "thatone.png";
+      const AUDIO_SRC = "thatone.mp3";
+
+      // Core elements.
+      const app = document.getElementById("app");
+      const meme = document.getElementById("meme");
+      const audio = document.getElementById("audio");
+      const overlay = document.getElementById("enterOverlay");
+      const enterButton = document.getElementById("enterButton");
+
+      // Keep the markup + JS source of truth aligned with the constants above.
+      meme.src = IMAGE_SRC;
+      audio.src = AUDIO_SRC;
+
+      let chaosStarted = false;
+      let lastTrailAt = 0;
+      let trailCounter = 0;
+
+      /*
+       * A small audio pool lets clicks/evades overlap instead of relying on
+       * one HTMLAudioElement. Every clone starts immediately from 0 seconds.
+       */
+      const audioPool = [];
+      const MAX_AUDIO_VOICES = 14;
+
+      function primeAudioPool() {
+        if (audioPool.length) return;
+
+        for (let i = 0; i < MAX_AUDIO_VOICES; i++) {
+          const voice = new Audio(AUDIO_SRC);
+          voice.preload = "auto";
+          voice.loop = true;
+          voice.volume = Math.max(0.14, 0.82 - i * 0.035);
+          audioPool.push(voice);
+        }
+      }
+
+      function playVoice(index = 0, rate = 1) {
+        const voice = audioPool[index % audioPool.length];
+        if (!voice) return;
+
+        try {
+          voice.currentTime = 0;
+          voice.playbackRate = rate;
+          voice.preservesPitch = false;
+          const playPromise = voice.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {});
+          }
+        } catch (_) {
+          // Ignore individual voice failures; other voices can still run.
+        }
+      }
+
+      function startChaos() {
+        if (chaosStarted) return;
+        chaosStarted = true;
+
+        primeAudioPool();
+
+        // Explicit user gesture unlocks audio playback.
+        try {
+          audio.currentTime = 0;
+          audio.loop = true;
+          audio.volume = 1;
+          audio.playbackRate = 1;
+          audio.preservesPitch = false;
+
+          const playPromise = audio.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {});
+          }
+        } catch (_) {}
+
+        // Start a deliberately excessive base stack immediately.
+        for (let i = 0; i < audioPool.length; i++) {
+          playVoice(i, 0.88 + i * 0.055);
+        }
+
+        overlay.classList.add("is-gone");
+        document.body.classList.add("chaos-live");
+
+        // Start the endless re-trigger engine.
+        setInterval(() => {
+          if (!chaosStarted) return;
+
+          const burstSize = 1 + Math.floor(Math.random() * 3);
+
+          for (let i = 0; i < burstSize; i++) {
+            const index = Math.floor(Math.random() * audioPool.length);
+            const rate = 0.72 + Math.random() * 1.22;
+            playVoice(index, rate);
+          }
+
+          // Periodically make the whole page briefly misbehave.
+          if (Math.random() < 0.34) triggerFlash();
+        }, 310);
+      }
+
+      // The giant ENTER button is the required autoplay workaround.
+      enterButton.addEventListener("click", startChaos);
+      enterButton.addEventListener("pointerdown", () => {
+        if (!chaosStarted) startChaos();
+        triggerFlash();
+        spawnAudioBurst(8);
+      });
+
+      /*
+       * Mouse trail: create a temporary copy of the joke text at the pointer.
+       * Throttled to avoid creating thousands of DOM nodes per second.
+       */
+      function spawnTrail(x, y) {
+        const now = performance.now();
+        if (now - lastTrailAt < 22) return;
+        lastTrailAt = now;
+
+        const node = document.createElement("span");
+        node.className = "trail";
+        node.textContent = "THAT ONE!!";
+        node.style.left = `${x + (Math.random() * 16 - 8)}px`;
+        node.style.top = `${y + (Math.random() * 16 - 8)}px`;
+        node.style.setProperty("--trail-r", `${Math.random() * 20 - 10}deg`);
+        node.style.scale = `${0.65 + Math.random() * 0.8}`;
+        node.dataset.trailId = ++trailCounter;
+
+        document.body.appendChild(node);
+
+        window.setTimeout(() => node.remove(), 520);
+      }
+
+      window.addEventListener("pointermove", (event) => {
+        spawnTrail(event.clientX, event.clientY);
+      }, { passive: true });
+
+      /*
+       * Randomly throw the image to a new safe-enough viewport location.
+       * The image uses top/left plus transforms, so we bound the center point
+       * against the current viewport to keep it visible rather than lost.
+       */
+      function escapeMeme() {
+        const rect = meme.getBoundingClientRect();
+        const marginX = Math.min(50, window.innerWidth * 0.07);
+        const marginY = Math.min(70, window.innerHeight * 0.09);
+
+        const halfW = Math.min(rect.width / 2, window.innerWidth * 0.39);
+        const halfH = Math.min(rect.height / 2, window.innerHeight * 0.33);
+
+        const minX = -Math.max(0, (window.innerWidth / 2) - halfW - marginX);
+        const maxX =  Math.max(0, (window.innerWidth / 2) - halfW - marginX);
+        const minY = -Math.max(0, (window.innerHeight / 2) - halfH - marginY);
+        const maxY =  Math.max(0, (window.innerHeight / 2) - halfH - marginY);
+
+        // Deliberately aggressive displacement.
+        const x = (Math.random() * 2 - 1) * Math.max(120, Math.abs(maxX || minX));
+        const y = (Math.random() * 2 - 1) * Math.max(90, Math.abs(maxY || minY));
+
+        meme.style.setProperty("--meme-x", `${x}px`);
+        meme.style.setProperty("--meme-y", `${y}px`);
+        meme.style.setProperty("--meme-r", `${Math.random() * 90 - 45}deg`);
+        meme.style.setProperty("--bounce-scale", `${0.82 + Math.random() * 0.62}`);
+
+        app.classList.add("panic-filter");
+        triggerFlash();
+        spawnAudioBurst(5 + Math.floor(Math.random() * 5), 1.25 + Math.random() * 0.9);
+
+        window.setTimeout(() => {
+          app.classList.remove("panic-filter");
+        }, 150);
+      }
+
+      // "Tag" interaction: hover/focus/click all count as trying to catch it.
+      meme.addEventListener("mouseenter", escapeMeme);
+      meme.addEventListener("pointerenter", escapeMeme);
+      meme.addEventListener("click", (event) => {
+        event.preventDefault();
+        escapeMeme();
+      });
+      meme.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        escapeMeme();
+      });
+
+      /*
+       * Make audio stack harder and faster when the meme is attacked.
+       */
+      function spawnAudioBurst(count, minRate = 1) {
+        if (!chaosStarted || !audioPool.length) return;
+
+        for (let i = 0; i < count; i++) {
+          const index = Math.floor(Math.random() * audioPool.length);
+          const rate = minRate + Math.random() * 0.95;
+          playVoice(index, rate);
+        }
+      }
+
+      /*
+       * Flash / visual alarm.
+       */
+      function triggerFlash() {
+        const opacity = (0.08 + Math.random() * 0.28).toFixed(3);
+        app.style.setProperty("--flash-opacity", opacity);
+
+        window.setTimeout(() => {
+          app.style.setProperty("--flash-opacity", "0");
+        }, 70 + Math.random() * 100);
+      }
+
+      // Click anywhere after entering = more noise.
+      window.addEventListener("click", (event) => {
+        if (!chaosStarted || event.target.closest(".enter-button")) return;
+
+        spawnAudioBurst(1 + Math.floor(Math.random() * 4), 1);
+        triggerFlash();
+      }, { passive: true });
+
+      // Keyboard interaction gets the same obnoxious response.
+      window.addEventListener("keydown", (event) => {
+        if (!chaosStarted) return;
+
+        if (event.code === "Space" || event.code === "Enter") {
+          event.preventDefault();
+          spawnAudioBurst(3 + Math.floor(Math.random() * 4), 1.1);
+          triggerFlash();
+          escapeMeme();
+        }
+      });
+
+      // Keep chaos bounded to the viewport on resize.
+      window.addEventListener("resize", () => {
+        meme.style.setProperty("--meme-x", "0px");
+        meme.style.setProperty("--meme-y", "0px");
+      }, { passive: true });
+    })();
+  </script>
+</body>
+</html>
